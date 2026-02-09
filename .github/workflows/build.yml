@@ -91,7 +91,29 @@ jobs:
           Get-ChildItem $avaPub | Where-Object { $_.Name -ne "MythNote.app" } | Copy-Item -Destination $macosDir -Recurse -Force
           Copy-Item "$webPub/*" $resDir -Recurse -Force
           
-          $plist = "<?xml version='1.0' encoding='UTF-8'?><!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'><plist version='1.0'><dict><key>CFBundleExecutable</key><string>${{ matrix.exec_name }}</string><key>CFBundleIdentifier</key><string>com.mythnote.app</string><key>CFBundleName</key><string>MythNote</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.0.0</string></dict></plist>"
+          # 构造包含图标定义的 PList
+          $plist = @"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>${{ matrix.exec_name }}</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.mythnote.app</string>
+    <key>CFBundleName</key>
+    <string>MythNote</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleIconFile</key>
+    <string>icon.icns</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>
+"@
           $plist | Out-File "$bundle/Contents/Info.plist" -Encoding utf8
           
           chmod +x "$macosDir/${{ matrix.exec_name }}"
