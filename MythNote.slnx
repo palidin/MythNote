@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MythNote.Avalonia/MythNote.Avalonia.csproj" />
+  <Project Path="MythNote.Web/MythNote.Web.csproj" />
+</Solution>
