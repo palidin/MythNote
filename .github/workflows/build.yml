@@ -91,11 +91,15 @@ jobs:
           Get-ChildItem $avaPub | Where-Object { $_.Name -ne "MythNote.app" } | Copy-Item -Destination $macosDir -Recurse -Force
           Copy-Item "$webPub/*" $resDir -Recurse -Force
           
-          # --- 增加图标处理 ---
-          if (Test-Path "icon.icns") { Copy-Item "icon.icns" $resDir -Force }
+          # --- 修正图标处理 ---
+          # 确保路径指向 Assets/icon.icns (根据你的 csproj)
+          $sourceIcon = "MythNote.Avalonia/Assets/icon.icns"
+          if (Test-Path $sourceIcon) { 
+              Copy-Item $sourceIcon "$resDir/icon.icns" -Force 
+          }
 
           # 在 PList 中声明图标文件
-          $plist = "<?xml version='1.0' encoding='UTF-8'?><!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'><plist version='1.0'><dict><key>CFBundleExecutable</key><string>${{ matrix.exec_name }}</string><key>CFBundleIdentifier</key><string>com.mythnote.app</string><key>CFBundleName</key><string>MythNote</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.0.0</string><key>CFBundleIconFile</key><string>icon.icns</string><key>NSHighResolutionCapable</key><true/></dict></plist>"
+          $plist = "<?xml version='1.0' encoding='UTF-8'?><!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' 'http://www.apple.com/DTDs/PropertyList-1.0.dtd'><plist version='1.0'><dict><key>CFBundleExecutable</key><string>${{ matrix.exec_name }}</string><key>CFBundleIdentifier</key><string>com.mythnote.app</string><key>CFBundleName</key><string>MythNote</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.0.0</string><key>CFBundleIconFile</key><string>icon</string><key>NSHighResolutionCapable</key><true/></dict></plist>"
           $plist | Out-File "$bundle/Contents/Info.plist" -Encoding utf8
           # ------------------
           
