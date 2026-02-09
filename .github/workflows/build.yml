@@ -40,7 +40,7 @@ jobs:
         $wwwroot = "MythNote.Web/wwwroot"
         if (!(Test-Path $wwwroot)) { New-Item -ItemType Directory -Path $wwwroot -Force }
         $zip = "dist.zip"
-        Invoke-WebRequest -Uri "https://github.com/palidin/mythnote-app/releases/download/v1.0.1/dist.zip" -OutFile $zip
+        Invoke-WebRequest -Uri "https://github.com/palidin/share-files/releases/download/v0.1/dist.zip" -OutFile $zip
         if ($IsWindows) { Expand-Archive $zip $wwwroot -Force } else { unzip -o $zip -d $wwwroot }
         Remove-Item $zip
 
