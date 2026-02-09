@@ -2,7 +2,7 @@ name: Build and Publish MythNote
 
 on:
   push:
-    tags: 
+    tags:
       - 'v*' # 仅在推送 v 开头的标签时触发 release 任务
   workflow_dispatch: # 保留手动触发开关
 
@@ -27,124 +27,118 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
-    # 1. 准备 Web 静态资源
-    - name: Prepare Web UI Assets
-      shell: pwsh
-      run: |
-        $wwwroot = "MythNote.Web/wwwroot"
-        if (!(Test-Path $wwwroot)) { New-Item -ItemType Directory -Path $wwwroot -Force }
-        $zip = "dist.zip"
-        Invoke-WebRequest -Uri "https://github.com/palidin/share-files/releases/download/v0.1/dist.zip" -OutFile $zip
-        if ($IsWindows) { Expand-Archive $zip $wwwroot -Force } else { unzip -o $zip -d $wwwroot }
-        Remove-Item $zip
+      # 1. 准备 Web 静态资源
+      - name: Prepare Web UI Assets
+        shell: pwsh
+        run: |
+          $wwwroot = "MythNote.Web/wwwroot"
+          if (!(Test-Path $wwwroot)) { New-Item -ItemType Directory -Path $wwwroot -Force }
+          $zip = "dist.zip"
+          Invoke-WebRequest -Uri "https://github.com/palidin/share-files/releases/download/v0.1/dist.zip" -OutFile $zip
+          if ($IsWindows) { Expand-Archive $zip $wwwroot -Force } else { unzip -o $zip -d $wwwroot }
+          Remove-Item $zip
 
-    # 2. 发布项目
-    - name: dotnet publish
-      shell: pwsh
-      run: |
-        # 始终发布 Web 项目
-        dotnet publish MythNote.Web/MythNote.Web.csproj -c Release -r ${{ matrix.runtime }} --self-contained true
-        
-        # 只有非 Linux 运行时才发布 Avalonia 项目
-        if ("${{ matrix.runtime }}" -ne "linux-x64") {
-          dotnet publish MythNote.Avalonia/MythNote.Avalonia.csproj -c Release -r ${{ matrix.runtime }} --self-contained true
-        }
-
-    # 3. 封装打包
-    - name: Package Assets
-      shell: pwsh
-      run: |
-        $webPub = "MythNote.Web/bin/Release/net8.0/${{ matrix.runtime }}/publish"
-        $avaPub = "MythNote.Avalonia/bin/Release/net8.0/${{ matrix.runtime }}/publish"
-        $staging = New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE/staging" -Force
-
-        if ($IsWindows) {
-          # Windows: 合并 Web 到 Avalonia 并打包
-          Copy-Item "$webPub/*" $avaPub -Recurse -Force
-          $zipPath = "$staging/${{ matrix.artifact }}.zip"
-          Compress-Archive -Path "$avaPub/*" -DestinationPath $zipPath -Force
+      # 2. 发布项目
+      - name: dotnet publish
+        shell: pwsh
+        run: |
+          # 始终发布 Web 项目
+          dotnet publish MythNote.Web/MythNote.Web.csproj -c Release -r ${{ matrix.runtime }} --self-contained true
           
-          if (Test-Path "installer.iss") {
-            & "ISCC.exe" installer.iss
-            Move-Item "./setup-out/MythNote-Windows-Setup.exe" "$staging/MythNote-Windows-Setup.exe" -Force
+          # 只有非 Linux 运行时才发布 Avalonia 项目
+          if ("${{ matrix.runtime }}" -ne "linux-x64") {
+            dotnet publish MythNote.Avalonia/MythNote.Avalonia.csproj -c Release -r ${{ matrix.runtime }} --self-contained true
           }
-        } 
-        elseif ("${{ matrix.runtime }}" -eq "linux-x64") {
-          # Linux: 只打包 Web 项目
-          chmod +x "$webPub/${{ matrix.exec_name }}"
-          cd $webPub
-          zip -r "$staging/${{ matrix.artifact }}.zip" .
-        }
-        else {
-          # macOS: .app 封装
-          $bundle = "$avaPub/MythNote.app"
-          $macosDir = "$bundle/Contents/MacOS"
-          $resDir = "$bundle/Contents/Resources"
-          New-Item -ItemType Directory -Path $macosDir, $resDir -Force
-          
-          Get-ChildItem $avaPub | Where-Object { $_.Name -ne "MythNote.app" } | Copy-Item -Destination $macosDir -Recurse -Force
-          Copy-Item "$webPub/*" $resDir -Recurse -Force
-          
-          # 构造包含图标定义的 PList
-          $plist = @"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>${{ matrix.exec_name }}</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.mythnote.app</string>
-    <key>CFBundleName</key>
-    <string>MythNote</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
-    <key>CFBundleIconFile</key>
-    <string>icon.icns</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-</dict>
-</plist>
-"@
-          $plist | Out-File "$bundle/Contents/Info.plist" -Encoding utf8
-          
-          chmod +x "$macosDir/${{ matrix.exec_name }}"
-          cd $avaPub
-          zip -r -y "$staging/${{ matrix.artifact }}.zip" "MythNote.app"
-        }
 
-    # 4. 上传构建产物
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact }}
-        path: staging/*
+      # 3. 封装打包
+      - name: Package Assets
+        shell: pwsh
+        run: |
+          $webPub = "MythNote.Web/bin/Release/net8.0/${{ matrix.runtime }}/publish"
+          $avaPub = "MythNote.Avalonia/bin/Release/net8.0/${{ matrix.runtime }}/publish"
+          $staging = New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE/staging" -Force
+
+          if ($IsWindows) {
+            # Windows: 合并 Web 到 Avalonia 并打包
+            Copy-Item "$webPub/*" $avaPub -Recurse -Force
+            $zipPath = "$staging/${{ matrix.artifact }}.zip"
+            Compress-Archive -Path "$avaPub/*" -DestinationPath $zipPath -Force
+            
+            if (Test-Path "installer.iss") {
+              & "ISCC.exe" installer.iss
+              Move-Item "./setup-out/MythNote-Windows-Setup.exe" "$staging/MythNote-Windows-Setup.exe" -Force
+            }
+          } 
+          elseif ("${{ matrix.runtime }}" -eq "linux-x64") {
+            # Linux: 只打包 Web 项目
+            chmod +x "$webPub/${{ matrix.exec_name }}"
+            cd $webPub
+            zip -r "$staging/${{ matrix.artifact }}.zip" .
+          }
+          else {
+            # macOS: .app 封装
+            $bundle = "$avaPub/MythNote.app"
+            $macosDir = "$bundle/Contents/MacOS"
+            $resDir = "$bundle/Contents/Resources"
+            New-Item -ItemType Directory -Path $macosDir, $resDir -Force
+            
+            Get-ChildItem $avaPub | Where-Object { $_.Name -ne "MythNote.app" } | Copy-Item -Destination $macosDir -Recurse -Force
+            Copy-Item "$webPub/*" $resDir -Recurse -Force
+            
+            # 构造包含图标定义的 PList (注意内部双引号转义)
+            $plist = @"
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+              <key>CFBundleExecutable</key><string>${{ matrix.exec_name }}</string>
+              <key>CFBundleIdentifier</key><string>com.mythnote.app</string>
+              <key>CFBundleName</key><string>MythNote</string>
+              <key>CFBundlePackageType</key><string>APPL</string>
+              <key>CFBundleShortVersionString</key><string>1.0.0</string>
+              <key>CFBundleIconFile</key><string>icon.icns</string>
+              <key>NSHighResolutionCapable</key><true/>
+            </dict>
+            </plist>
+            "@
+            $plist | Out-File "$bundle/Contents/Info.plist" -Encoding utf8
+            
+            chmod +x "$macosDir/${{ matrix.exec_name }}"
+            cd $avaPub
+            zip -r -y "$staging/${{ matrix.artifact }}.zip" "MythNote.app"
+          }
+
+      # 4. 上传构建产物
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: staging/*
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
     steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./all-artifacts
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          ./all-artifacts/**/*.zip
-          ./all-artifacts/**/*.exe
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./all-artifacts/**/*.zip
+            ./all-artifacts/**/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
