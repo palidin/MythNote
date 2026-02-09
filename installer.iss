@@ -4,6 +4,7 @@ AppId={{9F5A4E31-1B2C-4D3E-A5F6-7B8C9D0E1F2A}
 AppName=MythNote
 AppVersion=1.0.1
 WizardStyle=modern
+SetupIconFile=MythNote.Avalonia\Assets\icon.ico
 DefaultDirName={autopf}\MythNote
 DefaultGroupName=MythNote
 UninstallDisplayIcon={app}\MythNote.Avalonia.exe
