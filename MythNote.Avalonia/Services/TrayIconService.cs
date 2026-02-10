@@ -104,7 +104,7 @@ public class TrayIconService : ITrayIconService, IDisposable
         var icoAsset = AssetLoader.Open(new Uri("avares://MythNote.Avalonia/Assets/icon.ico"));
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            icoAsset = AssetLoader.Open(new Uri("avares://MythNote.Avalonia/Assets/tray-icon.png"));
+            icoAsset = AssetLoader.Open(new Uri("avares://MythNote.Avalonia/Assets/tray-iconTemplate.png"));
         }
 
         return new WindowIcon(icoAsset);
