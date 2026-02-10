@@ -41,6 +41,11 @@ public class TrayIconService : ITrayIconService, IDisposable
                 IsVisible = true
             };
 
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+    {
+        _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, true);
+    }
+
             // 禁用默认点击行为，完全依赖菜单项
             _trayIcon.Clicked += (s, e) => { };
         }
