@@ -65,7 +65,17 @@ public class NoteService(
 
         if (!string.IsNullOrEmpty(request.Keywords))
         {
-            query = query.Where(n => n.Title.Contains(request.Keywords) || n.Body.Contains(request.Keywords));
+            // 1. 提取唯一的关键词，过滤空白
+            var keywords = request.Keywords
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct() 
+                .ToList(); // 立即求值，避免后续多次迭代
+
+            // 2. 构建查询
+            foreach (var keyword in keywords)
+            {
+                query = query.Where(n => n.Title.Contains(keyword) || n.Body.Contains(keyword));
+            }
         }
 
 
