@@ -41,6 +41,11 @@ public class TrayIconService : ITrayIconService, IDisposable
                 IsVisible = true
             };
 
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+    {
+        _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, true);
+    }
+
             // 禁用默认点击行为，完全依赖菜单项
             _trayIcon.Clicked += (s, e) => { };
         }
@@ -104,7 +109,7 @@ public class TrayIconService : ITrayIconService, IDisposable
         var icoAsset = AssetLoader.Open(new Uri("avares://MythNote.Avalonia/Assets/icon.ico"));
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            icoAsset = AssetLoader.Open(new Uri("avares://MythNote.Avalonia/Assets/tray-icon.png"));
+            icoAsset = AssetLoader.Open(new Uri("avares://MythNote.Avalonia/Assets/tray-iconTemplate.png"));
         }
 
         return new WindowIcon(icoAsset);
